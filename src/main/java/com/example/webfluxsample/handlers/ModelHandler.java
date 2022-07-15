@@ -38,4 +38,12 @@ public class ModelHandler {
         map.put(modelDto.id(), modelDto);
         return modelDto;
     }
+
+    @ValidCheck
+    public Mono<ServerResponse> saveMany(ServerRequest request) {
+        final var flux = request.bodyToFlux(ModelDto.class);
+        return flux
+                .map(this::saveModel)
+                .then(ServerResponse.accepted().build());
+    }
 }

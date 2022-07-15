@@ -1,5 +1,6 @@
 package com.example.webfluxsample.config;
 
+import com.example.webfluxsample.exception.CustomConstraintValidationException;
 import com.example.webfluxsample.handlers.ModelHandler;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +20,6 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
-import javax.validation.ConstraintViolationException;
-import java.util.List;
-
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 
@@ -32,9 +30,11 @@ public class RouterConfig {
     @Bean(name = "modelProcessRoute")
     public RouterFunction<ServerResponse> modelRoutes(ModelHandler modelHandler) {
         return route().path("/api/model", builder -> builder
-                .nest(RequestPredicates.accept(MediaType.APPLICATION_JSON), b -> b
-                        .GET(modelHandler::getAll)
-                        .POST(modelHandler::save)))
+                        .nest(RequestPredicates.accept(MediaType.APPLICATION_JSON), b -> b
+                                .GET(modelHandler::getAll)
+                                .POST(RequestPredicates.queryParam("all", s -> true), modelHandler::saveMany)
+                                .POST(modelHandler::save))
+                )
                 .build();
     }
 
@@ -42,17 +42,13 @@ public class RouterConfig {
     @Order(-2)
     public WebExceptionHandler exceptionHandler(ErrorResolver errorResolver) {
         return (exchange, ex) -> {
-            if (ex instanceof ConstraintViolationException e) {
-                return errorResolver.resolve(exchange, new ConstraintError(e.getConstraintViolations()
-                                .stream()
-                                .map(violation -> "%s: %s".formatted(violation.getPropertyPath(), violation.getMessage())).toList()),
-                        HttpStatus.BAD_REQUEST);
+            if (ex instanceof CustomConstraintValidationException e) {
+                return errorResolver.resolve(exchange, ConstraintError.error(e), HttpStatus.BAD_REQUEST);
             }
             return Mono.error(ex);
         };
     }
 
-    record ConstraintError(List<String> errors) {}
 
     @Component
     @RequiredArgsConstructor
