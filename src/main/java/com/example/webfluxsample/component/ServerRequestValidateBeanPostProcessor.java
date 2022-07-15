@@ -7,9 +7,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.server.ServerRequest;
 
-import javax.validation.Validator;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.*;
@@ -20,7 +18,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class ServerRequestValidateBeanPostProcessor implements BeanPostProcessor {
     private final Map<String, Class<?>> annotatedBeans = new HashMap<>();
-    private final Validator validator;
+    private final MethodArgumentsValidatorProcessor argumentsValidatorProcessor;
 
     @Override
     public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
@@ -41,23 +39,13 @@ public class ServerRequestValidateBeanPostProcessor implements BeanPostProcessor
         if (classInfo != null) {
             return Proxy.newProxyInstance(classInfo.getClassLoader(), classInfo.getInterfaces(), (proxy, method, args) -> {
                 if (method.isAnnotationPresent(ValidCheck.class)) {
-                    int index = findServerRequestArg(args);
-                    if (index != -1) {
-                        args[index] = new ValidatedServerRequest((ServerRequest) args[index], validator);
-                    }
                     log.info("Using post processor for validating");
+                    return method.invoke(bean, argumentsValidatorProcessor.process(args));
                 }
                 return method.invoke(bean, args);
             });
         }
         return bean;
-    }
-
-    private static int findServerRequestArg(Object[] args) {
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] instanceof ServerRequest) return i;
-        }
-        return -1;
     }
 
 }
