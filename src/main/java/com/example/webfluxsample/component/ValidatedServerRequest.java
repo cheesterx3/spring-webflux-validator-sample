@@ -37,12 +37,12 @@ class ValidatedServerRequest extends ServerRequestWrapper {
 
     @Override
     public <T> T body(BodyExtractor<T, ? super ServerHttpRequest> extractor) {
-        return validated(super.body(extractor), validator);
+        return bodyFromExtractor(super.body(extractor), validator);
     }
 
     @Override
     public <T> T body(BodyExtractor<T, ? super ServerHttpRequest> extractor, Map<String, Object> hints) {
-        return validated(super.body(extractor, hints), validator);
+        return bodyFromExtractor(super.body(extractor, hints), validator);
     }
 
     @Override

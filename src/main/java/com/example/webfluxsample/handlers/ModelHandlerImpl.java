@@ -4,6 +4,7 @@ import com.example.webfluxsample.config.ValidCheck;
 import com.example.webfluxsample.domain.ModelDto;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Flux;
@@ -29,7 +30,7 @@ public class ModelHandlerImpl implements ModelHandler {
     @Override
     @ValidCheck
     public Mono<ServerResponse> save(ServerRequest request) {
-        final var modelDtoMono = request.bodyToMono(ModelDto.class);
+        final var modelDtoMono = request.body(BodyExtractors.toMono(ModelDto.class));
 
         return modelDtoMono
                 .map(this::saveModel)
@@ -39,7 +40,7 @@ public class ModelHandlerImpl implements ModelHandler {
     @Override
     @ValidCheck
     public Mono<ServerResponse> saveMany(ServerRequest request) {
-        final var flux = request.bodyToFlux(ModelDto.class);
+        final var flux = request.body(BodyExtractors.toFlux(ModelDto.class));
         return flux
                 .map(this::saveModel)
                 .then(ServerResponse.accepted().build());

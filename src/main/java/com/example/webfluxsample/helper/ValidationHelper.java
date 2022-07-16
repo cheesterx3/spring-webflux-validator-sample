@@ -2,6 +2,7 @@ package com.example.webfluxsample.helper;
 
 import com.example.webfluxsample.exception.CustomConstraintValidationException;
 import org.reactivestreams.Publisher;
+import org.springframework.core.ResolvableType;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -16,14 +17,10 @@ public final class ValidationHelper {
     private ValidationHelper() {
     }
 
-    public static <T> T validated(T body, Validator validator) {
-        if (body != null) {
-            final var violations = validator.validate(body);
-            if (!violations.isEmpty()) {
-                throw new CustomConstraintValidationException(new ConstraintViolationException("", violations));
-            }
-        }
-        return body;
+    public static <T> T bodyFromExtractor(T extractorValue, Validator validator) {
+        if (extractorValue instanceof Mono<?> mono) return (T) mono.flatMap(t -> validatedMono(t, validator));
+        if (extractorValue instanceof Flux<?> flux) return (T) validatedFlux(flux, validator);
+        return extractorValue;
     }
 
     public static <T> Mono<T> validatedMono(T t, Validator validator) {
