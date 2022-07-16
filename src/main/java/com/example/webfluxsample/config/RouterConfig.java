@@ -40,10 +40,10 @@ public class RouterConfig {
 
     @Bean
     @Order(-2)
-    public WebExceptionHandler exceptionHandler(ErrorResolver errorResolver) {
+    public WebExceptionHandler exceptionHandler(ErrorProcessor errorProcessor) {
         return (exchange, ex) -> {
             if (ex instanceof CustomConstraintValidationException e) {
-                return errorResolver.resolve(exchange, ConstraintError.error(e), HttpStatus.BAD_REQUEST);
+                return errorProcessor.process(exchange, ConstraintError.error(e), HttpStatus.BAD_REQUEST);
             }
             return Mono.error(ex);
         };
@@ -52,10 +52,10 @@ public class RouterConfig {
 
     @Component
     @RequiredArgsConstructor
-    static class ErrorResolver {
+    static class ErrorProcessor {
         private final DataBufferWriter bufferWriter;
 
-        public <T> Mono<Void> resolve(ServerWebExchange exchange, T object, HttpStatus status) {
+        public <T> Mono<Void> process(ServerWebExchange exchange, T object, HttpStatus status) {
             final var httpResponse = exchange.getResponse();
             httpResponse.getHeaders().set(HttpHeaders.CONTENT_TYPE, "application/json; charset= utf-8");
             httpResponse.setStatusCode(status);

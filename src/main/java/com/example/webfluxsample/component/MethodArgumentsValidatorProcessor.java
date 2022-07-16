@@ -14,17 +14,10 @@ public class MethodArgumentsValidatorProcessor {
 
     public Object[] process(Object[] args) {
         Objects.requireNonNull(args, "Arguments cannot be null");
-        final var index = findServerRequestArg(args);
-        if (index != -1) {
-            args[index] = new ValidatedServerRequest((ServerRequest) args[index], validator);
+        for (int i = 0; i < args.length; i++) {
+            if (args[i] instanceof ServerRequest e) args[i] = new ValidatedServerRequest(e, validator);
         }
         return args;
     }
 
-    private int findServerRequestArg(Object[] args) {
-        for (int i = 0; i < args.length; i++) {
-            if (args[i] instanceof ServerRequest) return i;
-        }
-        return -1;
-    }
 }
